@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ current_subject.title }}</title>
+    <style>
+        :root {
+            --panel: rgba(255, 250, 242, 0.9);
+            --line: #d5c5ad;
+            --text: #2a241d;
+            --muted: #6f6457;
+            --accent: #b64d2d;
+            --accent-dark: #7d2f1a;
+            --gold: #d6a843;
+            --teal: #2f6f68;
+            --shadow: 0 22px 60px rgba(62, 39, 19, 0.12);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(214, 168, 67, 0.28), transparent 30%),
+                radial-gradient(circle at right, rgba(47, 111, 104, 0.18), transparent 24%),
+                linear-gradient(135deg, #f1e6d2 0%, #f8f3ea 45%, #efe5d9 100%);
+            min-height: 100vh;
+        }
+
+        .shell {
+            width: min(1280px, calc(100% - 32px));
+            margin: 24px auto;
+            display: grid;
+            gap: 20px;
+        }
+
+        .hero {
+            background: linear-gradient(125deg, rgba(42, 36, 29, 0.95), rgba(65, 52, 42, 0.82));
+            color: #fff9ef;
+            border-radius: 28px;
+            padding: 34px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(214, 168, 67, 0.22), transparent 22%),
+                radial-gradient(circle at bottom left, rgba(47, 111, 104, 0.22), transparent 30%),
+                linear-gradient(140deg, transparent 0%, rgba(255, 255, 255, 0.04) 100%);
+        }
+
+        .hero-grid, .content, .two-col, .subject-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .hero-grid {
+            position: relative;
+            z-index: 1;
+            grid-template-columns: 1.4fr 1fr;
+            align-items: end;
+        }
+
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            font-size: 0.78rem;
+            color: #f2d38f;
+            margin-bottom: 10px;
+        }
+
+        h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+
+        h1 {
+            font-size: clamp(2.3rem, 5vw, 4.5rem);
+            line-height: 0.95;
+            max-width: 10ch;
+        }
+
+        .hero p {
+            max-width: 56ch;
+            color: rgba(255, 249, 239, 0.8);
+            line-height: 1.6;
+            margin: 16px 0 0;
+        }
+
+        .hero-stats, .subject-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .subject-grid {
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .stat, .subject-card, .panel {
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat {
+            padding: 18px;
+            background: rgba(255, 249, 239, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 249, 239, 0.14);
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.9rem;
+            margin-bottom: 6px;
+        }
+
+        .subject-card {
+            display: block;
+            padding: 18px;
+            border: 1px solid rgba(122, 94, 59, 0.18);
+            background: rgba(255, 255, 255, 0.74);
+            color: var(--text);
+            text-decoration: none;
+            transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .subject-card:hover,
+        .subject-card.active {
+            transform: translateY(-2px);
+            border-color: rgba(182, 77, 45, 0.45);
+        }
+
+        .content {
+            grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
+            align-items: start;
+        }
+
+        .stack { display: grid; gap: 20px; }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid rgba(122, 94, 59, 0.18);
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-head, .resource-meta, .recording-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .panel-head { margin-bottom: 18px; }
+
+        .panel-head p, .muted {
+            color: var(--muted);
+            margin: 6px 0 0;
+            line-height: 1.5;
+        }
+
+        .badge, .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            font-size: 0.84rem;
+        }
+
+        .badge {
+            padding: 8px 12px;
+            background: rgba(182, 77, 45, 0.08);
+            color: var(--accent-dark);
+        }
+
+        .tag {
+            margin-bottom: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--teal);
+        }
+
+        .announcement-list, .resource-list, .recording-list, .chat-log {
+            display: grid;
+            gap: 14px;
+        }
+
+        .announcement, .resource-item, .recording-item, .chat-bubble {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.56);
+        }
+
+        .two-col { grid-template-columns: 1.08fr 0.92fr; }
+
+        form { display: grid; gap: 12px; }
+
+        label {
+            display: grid;
+            gap: 6px;
+            font-size: 0.94rem;
+            color: var(--muted);
+        }
+
+        input, textarea, button { font: inherit; }
+
+        input, textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.82);
+            color: var(--text);
+        }
+
+        textarea {
+            min-height: 96px;
+            resize: vertical;
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 999px;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        button:hover { transform: translateY(-1px); }
+
+        .primary { background: var(--accent); color: #fff; }
+        .secondary { background: #efe4d0; color: var(--text); }
+        .ghost { background: rgba(47, 111, 104, 0.12); color: var(--teal); }
+        .danger { background: rgba(125, 47, 26, 0.12); color: var(--accent-dark); }
+
+        a {
+            color: var(--accent-dark);
+            text-decoration: none;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 18px;
+            background: #1c1814;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        .chat-bubble.user { background: rgba(182, 77, 45, 0.08); }
+        .chat-bubble.ai { background: rgba(47, 111, 104, 0.08); }
+
+        .chat-input {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .info-card {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.56);
+            display: grid;
+            gap: 10px;
+        }
+
+        .info-card code {
+            font-size: 0.92rem;
+            color: var(--accent-dark);
+        }
+
+        .status, .helper {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .status { min-height: 24px; }
+
+        @media (max-width: 980px) {
+            .hero-grid, .content, .two-col, .hero-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .shell {
+                width: min(100% - 16px, 1280px);
+                margin: 8px auto 24px;
+            }
+
+            .hero, .panel {
+                border-radius: 20px;
+                padding: 18px;
+            }
+
+            .chat-input { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <section class="hero">
+            <div class="hero-grid">
+                <div>
+                    <div class="eyebrow">{{ current_subject.eyebrow }}</div>
+                    <h1>{{ current_subject.hero_title }}</h1>
+                    <p>{{ current_subject.description }}</p>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat"><strong>{{ notes|length }}</strong><span>Notes available</span></div>
+                    <div class="stat"><strong>{{ recordings|length }}</strong><span>Recent recordings</span></div>
+                    <div class="stat"><strong>{{ tests|length }}</strong><span>Tests uploaded</span></div>
+                    <div class="stat"><strong>AI</strong><span>Study support panel</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>Subjects</h2>
+                    <p>Switch between the shared hub and the three new subject pages.</p>
+                </div>
+                <span class="badge">{{ current_subject.badge }}</span>
+            </div>
+            <div class="subject-grid">
+                {% for subject in subject_links %}
+                    <a
+                        class="subject-card {% if subject.slug == current_subject_slug %}active{% endif %}"
+                        href="{% if subject.slug == 'general' %}{% url 'home' %}{% else %}{% url 'subject_page' subject.slug %}{% endif %}"
+                    >
+                        <span class="tag">{{ subject.eyebrow }}</span>
+                        <h3>{{ subject.title }}</h3>
+                        <p class="muted">{{ subject.description }}</p>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="content">
+            <main class="stack">
+                <section class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Class Stream</h2>
+                            <p>Subject-specific updates so each page feels active instead of just being a storage area.</p>
+                        </div>
+                    </div>
+                    <div class="announcement-list">
+                        {% for announcement in announcements %}
+                            <article class="announcement">
+                                <span class="tag">{{ announcement.tag }}</span>
+                                <h3>{{ announcement.title }}</h3>
+                                <p class="muted">{{ announcement.body }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="panel two-col">
+                    <div>
+                        <div class="panel-head">
+                            <div>
+                                <h2>Teacher Notes</h2>
+                                <p>Upload lecture notes, worksheets, and handouts for {{ current_subject.title }}.</p>
+                            </div>
+                        </div>
+                        <form method="post" action="{% url 'upload_note' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="subject" value="{{ current_subject_slug }}">
+                            <label>
+                                Teacher name
+                                <input type="text" name="uploaded_by" placeholder="Prof. Sharma">
+                            </label>
+                            <label>
+                                Note title
+                                <input type="text" name="title" placeholder="Week 4 lecture notes" required>
+                            </label>
+                            <label>
+                                Description
+                                <textarea name="description" placeholder="Short summary or instructions"></textarea>
+                            </label>
+                            <label>
+                                Attachment
+                                <input type="file" name="attachment" required>
+                            </label>
+                            <div class="btn-row">
+                                <button class="primary" type="submit">Upload Notes</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div>
+                        <div class="panel-head">
+                            <div>
+                                <h3>Latest Materials</h3>
+                                <p>Recent notes for this subject.</p>
+                            </div>
+                        </div>
+                        <div class="resource-list">
+                            {% for note in notes %}
+                                <article class="resource-item">
+                                    <h4>{{ note.title }}</h4>
+                                    {% if note.description %}
+                                        <p class="muted">{{ note.description }}</p>
+                                    {% endif %}
+                                    <div class="resource-meta">
+                                        <span>{{ note.uploaded_by }}</span>
+                                        <span>{{ note.created_at|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    <div class="resource-meta">
+                                        <a href="{{ note.attachment.url }}" target="_blank" rel="noopener">Open file</a>
+                                    </div>
+                                </article>
+                            {% empty %}
+                                <div class="resource-item">
+                                    <p class="muted">No notes uploaded yet.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel two-col">
+                    <div>
+                        <div class="panel-head">
+                            <div>
+                                <h2>Class Recording</h2>
+                                <p>Use the same camera flow to record and upload a lecture or recap for {{ current_subject.title }}.</p>
+                            </div>
+                            <span class="badge">Camera capture</span>
+                        </div>
+                        <video id="cameraPreview" autoplay muted playsinline></video>
+                        <form id="recordingMetaForm">
+                            <label>
+                                Recording title
+                                <input type="text" id="recordingTitle" placeholder="Revision session recap">
+                            </label>
+                            <label>
+                                Recorded by
+                                <input type="text" id="recordedBy" placeholder="Teacher or student name">
+                            </label>
+                        </form>
+                        <div class="btn-row" style="margin-top: 14px;">
+                            <button class="secondary" type="button" id="enableCameraBtn">Enable Camera</button>
+                            <button class="primary" type="button" id="startRecordingBtn" disabled>Start Recording</button>
+                            <button class="ghost" type="button" id="stopRecordingBtn" disabled>End Recording</button>
+                        </div>
+                        <p class="status" id="recordingStatus">Camera is idle.</p>
+                        <div class="helper">When you click <strong>End Recording</strong>, the video is uploaded to this subject page immediately.</div>
+                    </div>
+                    <div>
+                        <div class="panel-head">
+                            <div>
+                                <h3>Recent Uploads</h3>
+                                <p>Recorded sessions and recap clips for this subject.</p>
+                            </div>
+                        </div>
+                        <div class="recording-list" id="recordingList">
+                            {% for recording in recordings %}
+                                <article class="recording-item" data-recording-id="{{ recording.id }}">
+                                    <h4>{{ recording.title }}</h4>
+                                    <video controls preload="metadata">
+                                        <source src="{{ recording.video.url }}">
+                                    </video>
+                                    <div class="recording-meta">
+                                        <span>{{ recording.recorded_by }}</span>
+                                        <span>{{ recording.created_at|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    <div class="btn-row" style="margin-top: 12px;">
+                                        <button class="danger delete-recording-btn" type="button" data-recording-id="{{ recording.id }}">Delete Video</button>
+                                    </div>
+                                </article>
+                            {% empty %}
+                                <div class="recording-item" id="emptyRecordingState">
+                                    <p class="muted">No recordings uploaded yet.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel two-col">
+                    <div>
+                        <div class="panel-head">
+                            <div>
+                                <h2>Tests</h2>
+                                <p>Teachers can upload quizzes, class tests, and revision papers for {{ current_subject.title }}.</p>
+                            </div>
+                            <span class="badge">Assessment uploads</span>
+                        </div>
+                        <form method="post" action="{% url 'upload_test' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="subject" value="{{ current_subject_slug }}">
+                            <label>
+                                Teacher name
+                                <input type="text" name="uploaded_by" placeholder="Prof. Sharma">
+                            </label>
+                            <label>
+                                Test title
+                                <input type="text" name="title" placeholder="Quiz 2: Differential Equations" required>
+                            </label>
+                            <label>
+                                Description
+                                <textarea name="description" placeholder="Marks, unit coverage, or instructions"></textarea>
+                            </label>
+                            <label>
+                                Test file
+                                <input type="file" name="attachment" required>
+                            </label>
+                            <div class="btn-row">
+                                <button class="primary" type="submit">Upload Test</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div>
+                        <div class="panel-head">
+                            <div>
+                                <h3>Latest Tests</h3>
+                                <p>Assessment files posted for this subject.</p>
+                            </div>
+                        </div>
+                        <div class="resource-list">
+                            {% for test in tests %}
+                                <article class="resource-item">
+                                    <h4>{{ test.title }}</h4>
+                                    {% if test.description %}
+                                        <p class="muted">{{ test.description }}</p>
+                                    {% endif %}
+                                    <div class="resource-meta">
+                                        <span>{{ test.uploaded_by }}</span>
+                                        <span>{{ test.created_at|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    <div class="resource-meta">
+                                        <a href="{{ test.attachment.url }}" target="_blank" rel="noopener">Open file</a>
+                                    </div>
+                                </article>
+                            {% empty %}
+                                <div class="resource-item">
+                                    <p class="muted">No tests uploaded yet.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <aside class="stack">
+                <section class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>AI Class Assistant</h2>
+                            <p>The chatbot sends the current subject to the backend, and Django calls Groq with your API key.</p>
+                        </div>
+                        <span class="badge">{{ ai_status.provider }}</span>
+                    </div>
+                    {% comment %} <div class="info-card">
+                        <strong>How AI integration works</strong>
+                        <p class="muted">The browser sends your message and the active subject to the Django `/chat/` endpoint. The backend builds a subject-aware prompt, calls Groq using the server-side API key, and returns the text back to this page.</p>
+                        <p class="muted">Current backend mode: <code>{% if ai_status.configured %}Groq active{% else %}Groq key missing{% endif %}</code>{% if ai_status.model %} using <code>{{ ai_status.model }}</code>{% endif %}.</p>
+                        <p class="muted">Put your key in <code>classroom/.env</code> as <code>GROQ_API_KEY=your_key_here</code>, then restart the server.</p>
+                    </div> {% endcomment %}
+                    <div class="chat-log" id="chatLog">
+                        <div class="chat-bubble ai">Ask for a concept summary, quiz questions, or a quick explanation for {{ current_subject.title }}.</div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="message" placeholder="Explain the current topic in simple terms">
+                        <button class="primary" type="button" id="sendMessageBtn">Ask AI</button>
+                    </div>
+                    <p class="status" id="chatStatus"></p>
+                </section>
+            </aside>
+        </div>
+    </div>
+
+    {{ current_subject_slug|json_script:"current-subject-slug" }}
+
+    <script>
+        const csrftoken = getCookie("csrftoken");
+        const currentSubjectSlug = JSON.parse(document.getElementById("current-subject-slug").textContent);
+        const preview = document.getElementById("cameraPreview");
+        const enableCameraBtn = document.getElementById("enableCameraBtn");
+        const startRecordingBtn = document.getElementById("startRecordingBtn");
+        const stopRecordingBtn = document.getElementById("stopRecordingBtn");
+        const recordingStatus = document.getElementById("recordingStatus");
+        const recordingList = document.getElementById("recordingList");
+        const chatLog = document.getElementById("chatLog");
+        const chatStatus = document.getElementById("chatStatus");
+        const sendMessageBtn = document.getElementById("sendMessageBtn");
+
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let chunks = [];
+
+        enableCameraBtn.addEventListener("click", async () => {
+            if (mediaStream) {
+                recordingStatus.textContent = "Camera already enabled.";
+                startRecordingBtn.disabled = false;
+                return;
+            }
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                preview.srcObject = mediaStream;
+                startRecordingBtn.disabled = false;
+                recordingStatus.textContent = "Camera ready.";
+            } catch (error) {
+                recordingStatus.textContent = "Unable to access camera or microphone.";
+            }
+        });
+
+        startRecordingBtn.addEventListener("click", () => {
+            if (!mediaStream) {
+                recordingStatus.textContent = "Enable the camera first.";
+                return;
+            }
+
+            chunks = [];
+            const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+                ? "video/webm;codecs=vp9,opus"
+                : "video/webm";
+
+            mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+            mediaRecorder.onstop = uploadRecording;
+            mediaRecorder.start();
+            startRecordingBtn.disabled = true;
+            stopRecordingBtn.disabled = false;
+            recordingStatus.textContent = "Recording in progress...";
+        });
+
+        stopRecordingBtn.addEventListener("click", () => {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                stopRecordingBtn.disabled = true;
+                recordingStatus.textContent = "Finalizing and uploading recording...";
+            }
+        });
+
+        async function uploadRecording() {
+            const blob = new Blob(chunks, { type: chunks[0] ? chunks[0].type : "video/webm" });
+            if (!blob.size) {
+                recordingStatus.textContent = "Recording was empty.";
+                startRecordingBtn.disabled = false;
+                return;
+            }
+
+            const formData = new FormData();
+            const titleField = document.getElementById("recordingTitle").value.trim();
+            const title = titleField || `Recording ${new Date().toLocaleString()}`;
+            const recordedBy = document.getElementById("recordedBy").value.trim() || "Teacher";
+            formData.append("subject", currentSubjectSlug);
+            formData.append("title", title);
+            formData.append("recorded_by", recordedBy);
+            formData.append("video", blob, `${title.replace(/\s+/g, "_").toLowerCase()}.webm`);
+
+            try {
+                const response = await fetch("{% url 'upload_recording' %}", {
+                    method: "POST",
+                    headers: { "X-CSRFToken": csrftoken },
+                    body: formData,
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Upload failed.");
+                }
+
+                appendRecordingCard(data.recording.id, data.recording.title, data.recording.recorded_by, data.recording.video_url);
+                recordingStatus.textContent = data.message;
+                startRecordingBtn.disabled = false;
+            } catch (error) {
+                recordingStatus.textContent = error.message;
+                startRecordingBtn.disabled = false;
+            }
+        }
+
+        function appendRecordingCard(recordingId, title, recordedBy, videoUrl) {
+            const emptyState = document.getElementById("emptyRecordingState");
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const article = document.createElement("article");
+            article.className = "recording-item";
+            article.dataset.recordingId = recordingId;
+            article.innerHTML = `
+                <h4>${escapeHtml(title)}</h4>
+                <video controls preload="metadata">
+                    <source src="${encodeURI(videoUrl)}">
+                </video>
+                <div class="recording-meta">
+                    <span>${escapeHtml(recordedBy)}</span>
+                    <span>Just now</span>
+                </div>
+                <div class="btn-row" style="margin-top: 12px;">
+                    <button class="danger delete-recording-btn" type="button" data-recording-id="${recordingId}">Delete Video</button>
+                </div>
+            `;
+            recordingList.prepend(article);
+        }
+
+        recordingList.addEventListener("click", async (event) => {
+            const button = event.target.closest(".delete-recording-btn");
+            if (!button) {
+                return;
+            }
+
+            const recordingId = button.dataset.recordingId;
+            const card = button.closest(".recording-item");
+            button.disabled = true;
+
+            try {
+                const response = await fetch(`/recordings/${recordingId}/delete/`, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": csrftoken },
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Delete failed.");
+                }
+
+                card.remove();
+                recordingStatus.textContent = data.message;
+                if (!recordingList.querySelector(".recording-item")) {
+                    recordingList.innerHTML = `
+                        <div class="recording-item" id="emptyRecordingState">
+                            <p class="muted">No recordings uploaded yet.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                recordingStatus.textContent = error.message;
+                button.disabled = false;
+            }
+        });
+
+        sendMessageBtn.addEventListener("click", sendMessage);
+        document.getElementById("message").addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const input = document.getElementById("message");
+            const msg = input.value.trim();
+            if (!msg) {
+                return;
+            }
+
+            appendChatBubble(msg, "user");
+            input.value = "";
+            chatStatus.textContent = "Waiting for AI response...";
+
+            try {
+                const response = await fetch("{% url 'chatbot' %}", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-CSRFToken": csrftoken,
+                    },
+                    body: new URLSearchParams({ message: msg, subject: currentSubjectSlug }),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || "Request failed.");
+                }
+                appendChatBubble(data.response, "ai");
+                if (data.provider === "groq") {
+                    chatStatus.textContent = "Answered by Groq.";
+                } else {
+                    chatStatus.textContent = "";
+                }
+            } catch (error) {
+                appendChatBubble(error.message, "ai");
+                chatStatus.textContent = error.message;
+            }
+        }
+
+        function appendChatBubble(message, role) {
+            const bubble = document.createElement("div");
+            bubble.className = `chat-bubble ${role}`;
+            bubble.textContent = message;
+            chatLog.appendChild(bubble);
+        }
+
+        function getCookie(name) {
+            let value = null;
+            if (document.cookie) {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i += 1) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(`${name}=`)) {
+                        value = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return value;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
